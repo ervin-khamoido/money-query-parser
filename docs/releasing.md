@@ -36,7 +36,7 @@ npm publish --access public
 
 Complete any npm browser/2FA challenge. Verify registry metadata, install the published version into a fresh project, and run a real import before announcing the release.
 
-For later releases, configure an [npm trusted publisher](https://docs.npmjs.com/trusted-publishers/) with:
+An [npm trusted publisher](https://docs.npmjs.com/trusted-publishers/) is configured for this repository with:
 
 - GitHub owner: `ervin-khamoido`
 - Repository: `money-query-parser`

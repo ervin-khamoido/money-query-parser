@@ -18,7 +18,10 @@ const npm = (args, cwd = root) => execFileSync(process.execPath, [npmCli, ...arg
 
 try {
   // Build happens in the npm script. Avoid re-running prepack validation here.
-  const [packed] = JSON.parse(npm(['pack', '--ignore-scripts', '--json', '--pack-destination', temporary]));
+  const report = JSON.parse(npm(['pack', '--ignore-scripts', '--json', '--pack-destination', temporary]));
+  // npm 12 returns a name-keyed object; earlier versions return an array.
+  const packed = Array.isArray(report) ? report[0] : Object.values(report)[0];
+  assert.ok(packed && Array.isArray(packed.files), 'Unexpected npm pack report.');
   const allowed = new Set([
     'LICENSE', 'README.md', 'package.json',
     ...['config', 'index', 'parser', 'types'].flatMap((name) => [`dist/${name}.js`, `dist/${name}.d.ts`]),
