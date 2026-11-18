@@ -1,0 +1,24 @@
+name: Bug report
+description: Report an incorrect interpretation, error or integration problem.
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the exact input and parser options, using synthetic data.
+      render: typescript
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual results
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Package version, Node or browser version, TypeScript version
+    validations:
+      required: true

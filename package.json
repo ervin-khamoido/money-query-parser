@@ -1,0 +1,58 @@
+{
+  "name": "money-query-parser",
+  "version": "0.1.0",
+  "description": "Parse monetary search expressions into exact, JSON-safe filters without floating-point arithmetic.",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Ervin Khamoido",
+    "url": "https://github.com/ervin-khamoido"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ervin-khamoido/money-query-parser.git"
+  },
+  "homepage": "https://ervin-khamoido.github.io/money-query-parser/",
+  "bugs": { "url": "https://github.com/ervin-khamoido/money-query-parser/issues" },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "money",
+    "parser",
+    "search",
+    "transactions",
+    "minor-units",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.json",
+    "build:site": "npm run build && node scripts/build-site.mjs",
+    "preview:site": "npm run build:site && node scripts/serve-site.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p test/types/tsconfig.json",
+    "test": "npm run build && node --test --test-reporter=spec test/*.test.mjs",
+    "test:coverage": "npm run build && node --test --test-reporter=spec --experimental-test-coverage test/*.test.mjs",
+    "demo": "npm run build && node examples/demo.mjs",
+    "check": "npm run typecheck && npm test",
+    "check:package": "npm run build && node scripts/check-package.mjs",
+    "prepack": "npm run check"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}
