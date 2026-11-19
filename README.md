@@ -24,6 +24,29 @@ npm install money-query-parser
 
 The 0.x API is intentionally small. Interpretation changes are documented in the changelog; pin a compatible version range and review release notes when upgrading.
 
+### GitHub Packages
+
+The same library is also mirrored to [GitHub Packages](https://github.com/ervin-khamoido/money-query-parser/pkgs/npm/money-query-parser) as `@ervin-khamoido/money-query-parser`. Its compiled JavaScript and TypeScript declarations are checked byte-for-byte against the npm release before publishing.
+
+GitHub requires authentication even for public npm packages. Create a **personal access token (classic)** with `read:packages`, then run:
+
+```sh
+npm login --scope=@ervin-khamoido --auth-type=legacy --registry=https://npm.pkg.github.com
+# Username: your GitHub username; password: the classic token.
+```
+
+In the consuming project's `.npmrc`, add only the scope mapping:
+
+```ini
+@ervin-khamoido:registry=https://npm.pkg.github.com
+```
+
+```sh
+npm install @ervin-khamoido/money-query-parser
+```
+
+Use `from '@ervin-khamoido/money-query-parser'` in imports instead of the unscoped name shown below. Choose one distribution per project. Keep tokens in your user-level npm configuration or CI secrets, never in a committed `.npmrc`. See [GitHub's authentication documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry) for GitHub Actions installation with `GITHUB_TOKEN`. Installing from npm above needs no GitHub login.
+
 ## Try it
 
 Node.js 22 or newer is supported for development and Node consumers. This is an ESM package; use `import`. The library itself uses standard ECMAScript APIs, with no Node, DOM, network or storage dependency. The documentation playground executes the built library directly in a browser. Automated cross-browser compatibility tests are not included.
@@ -308,6 +331,7 @@ For Elasticsearch or another backend, compile the same AST into that backend's t
 npm run check          # strict type checks, build, runtime and example tests
 npm run test:coverage  # optional Node test coverage report
 npm run check:package  # real tarball → isolated offline install → import + declarations
+npm run check:github-package # scoped mirror → offline install → import + declarations
 npm run demo          # end-to-end synthetic search examples
 npm run preview:site  # build and serve the documentation locally
 ```

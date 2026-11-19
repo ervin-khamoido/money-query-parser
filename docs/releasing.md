@@ -47,6 +47,22 @@ The manual **Publish npm** workflow checks an existing version tag, validates th
 
 Create a GitHub release for the tag with the changelog notes and optional tarball. Keep the registry version, package version, tag and release notes consistent.
 
+## GitHub Packages mirror
+
+After the npm version is available, run the manual **Publish GitHub Packages** workflow on `main` with the same version tag:
+
+```sh
+gh workflow run publish-github.yml --ref main -f tag=v0.2.0
+```
+
+The workflow checks out and tests the tagged source, compares its compiled JavaScript and declarations byte-for-byte with the published npm tarball, and prepares `@ervin-khamoido/money-query-parser` in an isolated directory. Only the scoped distribution's metadata and README differ: its registry is `https://npm.pkg.github.com`, and source-only scripts/devDependencies are removed. The canonical source manifest keeps its unscoped npm name and npm registry.
+
+Before publication, it checks the exact 15-file tarball, an offline scoped installation, ESM imports and TypeScript declarations. It publishes with the workflow's temporary `GITHUB_TOKEN` (`packages: write`), then installs the actual registry version into another clean consumer and exercises all three APIs. No additional long-lived publishing token is needed.
+
+For the **first** publication, GitHub initially creates private packages. Open the package's **Package settings → Change visibility → Public**, then verify that its page is visible while signed out and that it is connected to this repository. GitHub documents this separate visibility step [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account). Later versions inherit the existing package visibility. A successful `--access public` publish alone is not a visibility check.
+
+Run `npm run check:github-package` locally to verify the preparation and installation without publishing. Existing published versions are immutable: retry only a failed pre-publication run, or verify an existing registry version rather than attempting to overwrite it. Mirroring an existing version does not require a library version bump.
+
 ## Documentation
 
 `site/` contains buildless HTML, CSS and browser JavaScript. `npm run build:site` builds the library and copies its exact JavaScript into `site/dist/library/`. It generates release notes from `CHANGELOG.md` and copies the PostgreSQL example with only its import path changed. There are no external scripts, analytics or CDN dependencies.

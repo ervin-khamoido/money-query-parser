@@ -55,6 +55,7 @@
     "demo": "npm run build && node examples/demo.mjs",
     "check": "npm run typecheck && npm test",
     "check:package": "npm run build && node scripts/check-package.mjs",
+    "check:github-package": "npm run build && node scripts/check-github-package.mjs",
     "check:compatibility": "npm run build && node scripts/check-compatibility.mjs",
     "prepack": "npm run check"
   },

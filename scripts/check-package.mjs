@@ -2,14 +2,17 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const packageRoot = resolve(process.argv[2] ?? root);
+const packageName = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')).name;
+assert.ok(['money-query-parser', '@ervin-khamoido/money-query-parser'].includes(packageName), 'Unexpected package name.');
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error('Run this script with npm run check:package.');
 const temporary = mkdtempSync(join(tmpdir(), 'money-query-consumer-'));
-const npm = (args, cwd = root) => execFileSync(process.execPath, [npmCli, ...args], {
+const npm = (args, cwd = packageRoot) => execFileSync(process.execPath, [npmCli, ...args], {
   cwd,
   encoding: 'utf8',
   env: { ...process.env, npm_config_cache: join(temporary, 'npm-cache') },
@@ -31,12 +34,13 @@ try {
 
   writeFileSync(join(temporary, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
   npm(['install', join(temporary, packed.filename), '--offline', '--ignore-scripts', '--no-audit', '--no-fund', '--package-lock=false'], temporary);
-  const metadata = JSON.parse(readFileSync(join(temporary, 'node_modules/money-query-parser/package.json'), 'utf8'));
+  const metadata = JSON.parse(readFileSync(join(temporary, 'node_modules', packageName, 'package.json'), 'utf8'));
+  assert.equal(metadata.name, packageName);
   assert.equal(Object.keys(metadata.dependencies ?? {}).length, 0);
 
   const consumer = `
     import assert from 'node:assert/strict';
-    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from 'money-query-parser';
+    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from '${packageName}';
     const parse = createMoneyQueryParser({ currencies: { EUR: 2 } });
     const result = parse('9007199254740993.01 EUR');
     assert.deepEqual(result, { ok: true, query: {
@@ -50,8 +54,8 @@ try {
   writeFileSync(join(temporary, 'consumer.mjs'), consumer);
   execFileSync(process.execPath, ['consumer.mjs'], { cwd: temporary, stdio: 'pipe' });
   writeFileSync(join(temporary, 'consumer.ts'), `
-    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from 'money-query-parser';
-    import type { MoneyQuery } from 'money-query-parser';
+    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from '${packageName}';
+    import type { MoneyQuery } from '${packageName}';
     const parse = createMoneyQueryParser({ currencies: { EUR: 2 } });
     const result = parse('12.50 EUR');
     if (result.ok) {

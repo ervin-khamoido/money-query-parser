@@ -1,0 +1,85 @@
+name: Publish GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag already published to npm (for example v0.2.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-package-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # Distribution scripts come from the workflow ref; the library comes from its tag.
+      # This also lets the workflow mirror releases created before it existed.
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          path: release
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@ervin-khamoido'
+      - name: Check tag and package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          node --input-type=module -e "import p from './release/package.json' with { type: 'json' }; if (process.env.RELEASE_TAG !== 'v' + p.version) throw new Error('Tag must match package.json');"
+      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+        working-directory: release
+      - run: npm run check
+        working-directory: release
+      - run: npm run check:package
+        working-directory: release
+      - name: Compare tagged build with the published npm release
+        working-directory: release
+        run: |
+          VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')
+          npm pack "money-query-parser@$VERSION" --registry=https://registry.npmjs.org --ignore-scripts --pack-destination "$RUNNER_TEMP"
+          mkdir "$RUNNER_TEMP/npm-release"
+          tar -xzf "$RUNNER_TEMP/money-query-parser-$VERSION.tgz" -C "$RUNNER_TEMP/npm-release"
+          diff -r dist "$RUNNER_TEMP/npm-release/package/dist"
+      - name: Prepare and verify scoped package
+        run: |
+          node scripts/prepare-github-package.mjs release "$RUNNER_TEMP/github-package"
+          npm run check:package -- "$RUNNER_TEMP/github-package"
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish "$RUNNER_TEMP/github-package" --registry=https://npm.pkg.github.com --access public --ignore-scripts
+      - name: Verify fresh registry installation
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("release/package.json")).version')
+          mkdir "$RUNNER_TEMP/github-consumer"
+          cd "$RUNNER_TEMP/github-consumer"
+          npm init --yes
+          npm install "@ervin-khamoido/money-query-parser@$VERSION" --registry=https://npm.pkg.github.com --ignore-scripts --no-audit --no-fund
+          diff -r node_modules/@ervin-khamoido/money-query-parser/dist "$RUNNER_TEMP/github-package/dist"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from '@ervin-khamoido/money-query-parser';
+          const parsed = createMoneyQueryParser({ currencies: { EUR: 2 } })('9007199254740993.01 EUR');
+          assert.equal(parsed.query.amount, '900719925474099301');
+          assert.equal(formatMoneyQuery(parsed.query), '9007199254740993.01 EUR');
+          assert.deepEqual(validateMoneyQuery(parsed.query, { currencies: { EUR: 2 } }), parsed);
+          console.log('Fresh GitHub Packages installation and all public APIs passed.');
+          NODE

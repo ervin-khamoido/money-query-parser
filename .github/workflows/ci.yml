@@ -25,6 +25,8 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm run check:package
+      - run: npm run check:github-package
+        if: matrix.node == 24
       - run: npm run demo
       - name: Compare with the published 0.1.0 baseline
         if: matrix.node == 24
