@@ -26,4 +26,9 @@ jobs:
       - run: npm run check
       - run: npm run check:package
       - run: npm run demo
+      - name: Compare with the published 0.1.0 baseline
+        if: matrix.node == 24
+        run: |
+          npm pack money-query-parser@0.1.0 --registry=https://registry.npmjs.org --ignore-scripts --pack-destination "$RUNNER_TEMP"
+          npm run check:compatibility -- "$RUNNER_TEMP/money-query-parser-0.1.0.tgz"
       - run: npm run build:site

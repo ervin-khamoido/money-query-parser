@@ -24,7 +24,7 @@ try {
   assert.ok(packed && Array.isArray(packed.files), 'Unexpected npm pack report.');
   const allowed = new Set([
     'LICENSE', 'README.md', 'package.json',
-    ...['config', 'index', 'parser', 'types'].flatMap((name) => [`dist/${name}.js`, `dist/${name}.d.ts`]),
+    ...['config', 'format', 'index', 'parser', 'types', 'validation'].flatMap((name) => [`dist/${name}.js`, `dist/${name}.d.ts`]),
   ]);
   for (const file of packed.files) assert.ok(allowed.delete(file.path), `Unexpected package file: ${file.path}`);
   assert.equal(allowed.size, 0, `Missing package files: ${[...allowed].join(', ')}`);
@@ -36,18 +36,21 @@ try {
 
   const consumer = `
     import assert from 'node:assert/strict';
-    import { createMoneyQueryParser } from 'money-query-parser';
+    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from 'money-query-parser';
     const parse = createMoneyQueryParser({ currencies: { EUR: 2 } });
     const result = parse('9007199254740993.01 EUR');
     assert.deepEqual(result, { ok: true, query: {
       kind: 'exact', currency: 'EUR', scale: 2, amount: '900719925474099301'
     } });
     assert.deepEqual(JSON.parse(JSON.stringify(result)), result);
+    assert.equal(formatMoneyQuery(result.query), '9007199254740993.01 EUR');
+    assert.deepEqual(validateMoneyQuery(result.query, { currencies: { EUR: 2 } }), result);
+    assert.deepEqual(parse('12.345 EUR').error.span, { start: 5, end: 6 });
   `;
   writeFileSync(join(temporary, 'consumer.mjs'), consumer);
   execFileSync(process.execPath, ['consumer.mjs'], { cwd: temporary, stdio: 'pipe' });
   writeFileSync(join(temporary, 'consumer.ts'), `
-    import { createMoneyQueryParser } from 'money-query-parser';
+    import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from 'money-query-parser';
     import type { MoneyQuery } from 'money-query-parser';
     const parse = createMoneyQueryParser({ currencies: { EUR: 2 } });
     const result = parse('12.50 EUR');
@@ -61,6 +64,13 @@ try {
     }
     // @ts-expect-error Public declarations must reject numeric input.
     parse(12.50);
+    const payload: unknown = {};
+    const validated = validateMoneyQuery(payload);
+    if (validated.ok) {
+      const text: string = formatMoneyQuery(validated.query);
+    }
+    // @ts-expect-error The published formatter declarations reject unknown payloads.
+    formatMoneyQuery(payload);
   `);
   execFileSync(process.execPath, [
     join(root, 'node_modules/typescript/bin/tsc'),

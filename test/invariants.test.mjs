@@ -71,6 +71,10 @@ test('10,000 generated strings return serializable results without throwing', ()
       }
     } else {
       assert.equal(typeof result.error.code, 'string');
+      const { start, end } = result.error.span;
+      assert.ok(Number.isInteger(start) && Number.isInteger(end));
+      assert.ok(0 <= start && start <= end && end <= input.length);
+      assert.equal(typeof result.error.details, 'object');
     }
   }
 });

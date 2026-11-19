@@ -45,7 +45,7 @@ To test the package in another project:
 ```sh
 npm pack
 # In the consuming project; replace this path with the generated tarball path:
-npm install /path/to/money-query-parser-0.1.0.tgz
+npm install /path/to/money-query-parser-0.2.0.tgz
 ```
 
 ## Usage
@@ -161,7 +161,14 @@ type MoneyQuery =
 
 type ParseResult =
   | { ok: true; query: MoneyQuery }
-  | { ok: false; error: { code: ParseErrorCode; message: string } };
+  | { ok: false; error: ParseError };
+
+interface ParseError {
+  code: ParseErrorCode;
+  message: string;
+  span?: { start: number; end: number };
+  details?: ParseErrorDetails;
+}
 ```
 
 The actual exported types are readonly. Readonly is a TypeScript constraint; returned objects are not frozen at runtime. `amount`, `min` and `max` are signed, canonical, base-10 integer strings in minor units. `scale` records the interpretation used by the parser.
@@ -181,6 +188,100 @@ The actual exported types are readonly. Readonly is a TypeScript constraint; ret
 | `REVERSED_RANGE` | Minimum exceeds maximum |
 
 The first detected error is returned. Error messages are English explanations; use codes for UI logic. A word such as `refund` can be interpreted as an unknown currency token. Free-text classification and deciding when to attempt monetary parsing belong to the host application's search UI. Do not silently send every invalid amount to a free-text search, especially after a precision error.
+
+### Source positions and structured details (0.2)
+
+```ts
+const result = parse('12.345 EUR');
+// {
+//   ok: false,
+//   error: {
+//     code: 'PRECISION_EXCEEDED',
+//     message: 'This currency supports at most 2 fractional digits; rounding is disabled.',
+//     span: { start: 5, end: 6 },
+//     details: { currency: 'EUR', allowedScale: 2, actualScale: 3 }
+//   }
+// }
+```
+
+`span` is a half-open `[start, end)` range in the **original, untrimmed input**, measured in UTF-16 code units. It works with `input.slice(start, end)` and a browser input's `setSelectionRange(start, end)`. It is not a byte offset or a grapheme index. An empty span marks an insertion point, such as a missing operand. Input-length errors mark the excess suffix; reversed ranges mark the range expression.
+
+All parser-created failures include `span` and `details`. These fields remain optional in the exported `ParseError` interface so existing callers can still construct 0.1-compatible error objects. Existing codes and messages are unchanged; exact-object comparisons or snapshots of failures will see the additional properties.
+
+| Error | Details |
+| --- | --- |
+| `PRECISION_EXCEEDED` | `currency`, `allowedScale`, `actualScale` |
+| `UNKNOWN_CURRENCY` | `currency` |
+| `INPUT_TOO_LONG`, `AMOUNT_TOO_LARGE` | `limit`, `actual` |
+| `INVALID_GROUPING` | `expected: 'digit-groups-of-three'`, `groupSize: 3` |
+| Other syntax/range errors | `expected`, describing the expected token or ordering |
+
+## Format a query (0.2)
+
+```ts
+import { formatMoneyQuery } from 'money-query-parser';
+
+formatMoneyQuery({
+  kind: 'range', currency: 'EUR', scale: 2, min: '-1000', max: '2000',
+});
+// '-10.00..20.00 EUR'
+
+formatMoneyQuery(
+  { kind: 'exact', currency: 'EUR', scale: 2, amount: '123450' },
+  { decimalSeparator: ',', groupSeparator: '.' },
+);
+// '1.234,50 EUR'
+```
+
+`formatMoneyQuery(query, options?)` returns a deterministic, parseable string. It writes an explicit uppercase currency suffix, all fractional digits required by `scale`, and a single space after comparison operators. Currency-only queries become the code alone. Formatting never converts money through a JavaScript `number` and never rounds.
+
+Options are `decimalSeparator` (dot by default), `groupSeparator` (disabled by default), plus the validator's optional `currencies` and `maxAmountDigits`. A requested NBSP or narrow NBSP is preserved in the output. Default formatting is a canonical decimal-dot representation; supplying separators produces a representation for that explicit format.
+
+The formatter validates its input defensively. Invalid ASTs throw a `TypeError` whose `cause` contains the validation error (`code`, `path`, `message`, `details`). Invalid configuration throws `TypeError` or `RangeError`. For untrusted input, call `validateMoneyQuery()` first to handle input failures as results.
+
+For a valid, clean AST, `parse(formatMoneyQuery(query))` preserves the query when the parser has matching currency scales, separators and sufficient resource limits. If you opt into 1000-digit operands, also raise the parser's input-length limit; grouping and two range operands increase the formatted length.
+
+## Validate a saved or received AST (0.2)
+
+```ts
+import { validateMoneyQuery, formatMoneyQuery } from 'money-query-parser';
+
+const payload: unknown = JSON.parse(
+  '{"kind":"exact","currency":"EUR","scale":2,"amount":"1250","label":"ignored"}',
+);
+const checked = validateMoneyQuery(payload, { currencies: { EUR: 2, JPY: 0 } });
+
+if (checked.ok) {
+  // A new object containing only the fields for its query kind.
+  console.log(checked.query);
+  console.log(formatMoneyQuery(checked.query)); // '12.50 EUR'
+} else {
+  console.log(checked.error.code, checked.error.path, checked.error.details);
+}
+```
+
+`validateMoneyQuery(value: unknown, options?)` checks the kind, uppercase currency code, scale, canonical integer strings, comparison operator and range order. It returns `{ ok: true, query }` or `{ ok: false, error: { code, path, message, details } }`, reporting the first error. `path` is a top-level field name or `$` for the whole value.
+
+By default, validation is **structural**: it checks scales 0–18 but does not know which scale your application uses for EUR. Supply `currencies` on the server to enforce both the currency allowlist and its authoritative scale. Lowercase configuration keys are accepted; AST currency values must already be uppercase. `maxAmountDigits` defaults to 38 and accepts 1–1000, excluding sign. A negative zero scale is normalized to numeric zero.
+
+Canonical amount strings permit `"0"`, `"1250"` and `"-1250"`; they reject `"-0"`, `"+1"`, `"01"`, decimals, whitespace and numeric values. Digit limits are checked before range comparisons. Validation does not repair or round amounts.
+
+Only known **own data properties** are read, once each. Inherited fields and accessors cannot supply required values. Extra fields, including prototype-related keys, are discarded. Accessors are not executed; inaccessible/revoked proxies produce `INVALID_QUERY`. The returned AST is a fresh snapshot; neither source objects nor options are mutated. Readonly is a TypeScript guarantee, not runtime freezing.
+
+| Validation code | Meaning |
+| --- | --- |
+| `INVALID_QUERY` | Not an object, or known fields cannot be read as own data properties |
+| `INVALID_KIND` | Unsupported or missing query kind |
+| `INVALID_CURRENCY` | Noncanonical or missing currency code |
+| `UNKNOWN_CURRENCY` | Currency is absent from the supplied allowlist |
+| `INVALID_SCALE` | Scale is not an integer from 0 to 18 |
+| `SCALE_MISMATCH` | Scale differs from the supplied currency configuration |
+| `INVALID_AMOUNT` | Missing or noncanonical integer-string amount |
+| `AMOUNT_TOO_LARGE` | Operand exceeds the configured digit limit |
+| `INVALID_OPERATOR` | Comparison operator is not `gt`, `gte`, `lt` or `lte` |
+| `REVERSED_RANGE` | Minimum exceeds maximum |
+
+Malformed values return failures. Invalid validation options throw. JSON decoding errors must be handled before AST validation. A valid AST describes a filter; account and tenant authorization still belong to your backend.
 
 ## Connect it to your search backend
 
@@ -211,9 +312,18 @@ npm run demo          # end-to-end synthetic search examples
 npm run preview:site  # build and serve the documentation locally
 ```
 
-Tests cover sign/zero normalization, precision boundaries, malformed grouping, range ordering, large integers, configuration snapshots, parameterized SQL output and public type narrowing. Generated tests use an independent `Intl.NumberFormat` oracle, deterministic malformed strings and `BigInt` ordering checks. They are deterministic test samples, not an exhaustive proof of correctness.
+Tests cover sign/zero normalization, precision boundaries, malformed grouping, range ordering, large integers, configuration snapshots, source positions, untrusted ASTs, parameterized SQL output and public type narrowing. Formatter round trips cover all scales 0–18, filter kinds and separators. Independent formatting checks use `BigInt` division/modulo and `Intl.NumberFormat`; malformed strings and AST cases exercise resource limits, prototypes and accessors. These are deterministic test samples, not an exhaustive proof of correctness.
 
 The [CI workflow](https://github.com/ervin-khamoido/money-query-parser/actions/workflows/ci.yml) checks Node 22, 24 and 26. Package checks inspect an explicit file allowlist, install the actual tarball without registry access, then check ESM imports and the shipped TypeScript declarations in a separate consumer project.
+
+CI also compares the parser with the immutable published 0.1.0 baseline, checking 50,070 cases across five configurations. It compares successful ASTs and existing error codes/messages while allowing the additive diagnostic fields. To reproduce this check locally (requires `tar`):
+
+```sh
+npm pack money-query-parser@0.1.0 --ignore-scripts --pack-destination /tmp
+npm run check:compatibility -- /tmp/money-query-parser-0.1.0.tgz
+```
+
+The baseline integrity hash is verified before extracting or loading its code.
 
 For a short code review, start with [design decisions](docs/design.md), then [the parser](src/parser.ts), [boundary tests](test/parser.test.mjs) and [the integration example](examples/transaction-search.mjs).
 

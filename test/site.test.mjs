@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 
 test('documentation build uses the exact library and current changelog version', () => {
@@ -10,7 +10,7 @@ test('documentation build uses the exact library and current changelog version',
   assert.ok(html.includes(`v${metadata.version}`));
   assert.ok(html.includes('The first public release'));
   assert.doesNotMatch(html, /\{\{[A-Z_]+\}\}/);
-  for (const file of ['config.js', 'index.js', 'parser.js', 'types.js']) {
+  for (const file of readdirSync('dist').filter((name) => name.endsWith('.js'))) {
     assert.equal(readFileSync(`site/dist/library/${file}`, 'utf8'), readFileSync(`dist/${file}`, 'utf8'));
   }
   const example = readFileSync('site/dist/examples/transaction-search.mjs', 'utf8');

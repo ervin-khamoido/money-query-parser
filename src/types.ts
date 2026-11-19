@@ -45,6 +45,63 @@ export type ParseErrorCode =
 export interface ParseError {
   readonly code: ParseErrorCode;
   readonly message: string;
+  /** Half-open UTF-16 offsets into the original, untrimmed input. */
+  readonly span?: SourceSpan;
+  /** Machine-readable context for localization; no message parsing required. */
+  readonly details?: ParseErrorDetails;
+}
+
+export interface SourceSpan {
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface ParseErrorDetails {
+  readonly expected?: string;
+  readonly currency?: string;
+  readonly allowedScale?: number;
+  readonly actualScale?: number;
+  readonly limit?: number;
+  readonly actual?: number;
+  readonly groupSize?: number;
+}
+
+export interface MoneyQueryValidationOptions {
+  /** Optional application allowlist. If supplied, scale must match its entry. */
+  readonly currencies?: Readonly<Record<string, number>>;
+  /** Canonical minor-unit magnitude digits per operand. Default: 38. */
+  readonly maxAmountDigits?: number;
+}
+
+export type MoneyQueryValidationErrorCode =
+  | 'INVALID_QUERY'
+  | 'INVALID_KIND'
+  | 'INVALID_CURRENCY'
+  | 'UNKNOWN_CURRENCY'
+  | 'INVALID_SCALE'
+  | 'SCALE_MISMATCH'
+  | 'INVALID_AMOUNT'
+  | 'AMOUNT_TOO_LARGE'
+  | 'INVALID_OPERATOR'
+  | 'REVERSED_RANGE';
+
+export type MoneyQueryField = '$' | 'kind' | 'currency' | 'scale' | 'amount' | 'operator' | 'min' | 'max';
+
+export interface MoneyQueryValidationError {
+  readonly code: MoneyQueryValidationErrorCode;
+  /** '$' means the whole value; other paths name a top-level AST field. */
+  readonly path: MoneyQueryField;
+  readonly message: string;
+  readonly details: ParseErrorDetails;
+}
+
+export type MoneyQueryValidationResult =
+  | { readonly ok: true; readonly query: MoneyQuery }
+  | { readonly ok: false; readonly error: MoneyQueryValidationError };
+
+export interface MoneyQueryFormatOptions extends MoneyQueryValidationOptions {
+  readonly decimalSeparator?: '.' | ',';
+  readonly groupSeparator?: '.' | ',' | ' ' | '\u00a0' | '\u202f' | null;
 }
 
 export type FailedParse = { readonly ok: false; readonly error: ParseError };

@@ -4,7 +4,7 @@
 
 A transaction search box accepts a short human expression; storage expects exact numeric predicates. Interpreting `1,234` as the wrong amount or truncating a large value changes which records appear. The library's job is to make that interpretation deterministic and inspectable.
 
-The public API is one factory returning a pure string-to-result function. Configuration is application-owned. It does not call a provider, query a database, read device locale or cache user data.
+The public API has a parser factory, an AST validator and an exact formatter. Configuration is application-owned. None calls a provider, queries a database, reads device locale or caches user data.
 
 ```text
 application currency/format configuration
@@ -46,7 +46,7 @@ Changing a configured scale can change results. A persisted search should theref
 
 Search strings are user input, so malformed amounts return a discriminated result. Invalid construction settings are programmer/configuration errors and throw early. The API requires a string; request body type validation remains the host's responsibility.
 
-Stable error codes support UI localization and telemetry. Messages describe the error without echoing the full raw query. Only the first error is returned. This is enough for a single search expression; editor-style source spans and multi-error recovery are deferred.
+Stable error codes and structured details support UI localization. Messages do not echo the full query. Parser failures include half-open UTF-16 source spans in the original input, retaining offsets through trimming, signs, currency extraction and grouping. Empty spans identify insertion points. The metadata fields are optional in the public interface for compatibility with caller-created 0.1 error objects. Multi-error recovery is deferred.
 
 There is no automatic text-search fallback. Otherwise a mistyped amount could silently change search mode and produce surprising results. The host decides how users enter monetary versus free-text searches.
 
@@ -63,6 +63,14 @@ A parser generator would add machinery without simplifying four expression kinds
 The AST describes intent; it has no SQL field names, database connection or tenant identifiers. A PostgreSQL example maps it to a fixed schema using bound parameters and a fixed operator allowlist. Adapters are application-specific and do not belong in the core yet.
 
 Authorization belongs to the backend, regardless of whether the same parser also runs in a browser. A valid filter grants no access to data. A client-supplied AST is untrusted; reparse the string or validate the AST against server rules.
+
+`validateMoneyQuery()` checks a bounded set of own data fields and constructs a clean snapshot. Unknown keys are dropped and required fields cannot come from a prototype or accessor. Validation can check a server currency allowlist and its scale; without that option it validates structure only. It never infers a currency registry from the code. Digit limits precede `BigInt` comparison. Invalid input is a result; invalid configuration throws.
+
+## Formatting and saved searches
+
+`formatMoneyQuery()` first validates its input, then converts integer strings into major-unit text with string slicing and padding. It uses explicit currency suffixes, complete fractional precision and deterministic operator/range spacing. Grouping is optional and follows the same explicit format as parsing. A requested NBSP variant is preserved.
+
+The round-trip contract concerns meaning, not preserving the user's original spelling: `+0012.5 eur` formats as `12.50 EUR`. A clean AST round-trips when parser currency scales, separators and resource limits match. Formatting a 1000-digit range can exceed the parser's default input length, so those custom configurations must raise the matching length limit too. Invalid formatter input throws `TypeError` with a structured validation error as its cause.
 
 ## 7. Small distribution, inspectable verification
 

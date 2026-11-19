@@ -1,4 +1,4 @@
-import { createMoneyQueryParser } from '../../src/index.js';
+import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from '../../src/index.js';
 import type { MoneyQuery, ParseErrorCode } from '../../src/index.js';
 
 const parse = createMoneyQueryParser({ currencies: { EUR: 2 }, decimalSeparator: ',' });
@@ -26,3 +26,23 @@ parse(12.50);
 createMoneyQueryParser({ currencies: { EUR: '2' } });
 // @ts-expect-error Only supported separators are accepted.
 createMoneyQueryParser({ currencies: { EUR: 2 }, decimalSeparator: ';' });
+
+const payload: unknown = { kind: 'exact', currency: 'EUR', scale: 2, amount: '1250' };
+const validated = validateMoneyQuery(payload, { currencies: { EUR: 2 } });
+if (validated.ok) {
+  const formatted: string = formatMoneyQuery(validated.query, { decimalSeparator: ',' });
+  void formatted;
+  // @ts-expect-error Validation output is readonly.
+  validated.query.currency = 'USD';
+} else {
+  const path: string = validated.error.path;
+  void path;
+  // @ts-expect-error A failed validation does not contain a query.
+  void validated.query;
+}
+// @ts-expect-error Unknown input must be validated before formatting.
+formatMoneyQuery(payload);
+// @ts-expect-error Decimal amount numbers are not canonical minor-unit strings.
+formatMoneyQuery({ kind: 'exact', currency: 'EUR', scale: 2, amount: 1250 });
+// @ts-expect-error Only dot/comma decimal separators are supported.
+formatMoneyQuery({ kind: 'currency', currency: 'EUR', scale: 2 }, { decimalSeparator: ';' });

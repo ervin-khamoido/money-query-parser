@@ -14,7 +14,7 @@ if (!releases.length || releases[0][1] !== metadata.version) {
 }
 const notes = releases.map(([, version, date, body]) => {
   const bullets = body.split(/^### /m)[0].split('\n').filter((line) => line.startsWith('- '));
-  return `<article class="release"><div><span class="release-label">RELEASE</span><h3>v${escape(version)}</h3><time datetime="${date}">${date}</time></div><div><h4>${version === '0.1.0' ? 'The first public release' : 'What changed'}</h4><ul>${bullets.map((line) => `<li>${escape(line.slice(2))}</li>`).join('')}</ul><a class="text-link" href="https://github.com/ervin-khamoido/money-query-parser/releases/tag/v${version}">Release on GitHub <span aria-hidden="true">↗</span></a></div></article>`;
+  return `<article class="release"><div><span class="release-label">RELEASE</span><h3>v${escape(version)}</h3><time datetime="${date}">${date}</time></div><div><h4>${version === '0.1.0' ? 'The first public release' : 'What changed'}</h4><ul>${bullets.map((line) => `<li>${escape(line.slice(2))}</li>`).join('')}</ul><a class="text-link" href="https://github.com/ervin-khamoido/money-query-parser/releases/tag/v${version}">Release on GitHub</a></div></article>`;
 }).join('\n');
 
 rmSync(destination, { recursive: true, force: true });

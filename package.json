@@ -1,6 +1,6 @@
 {
   "name": "money-query-parser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Parse monetary search expressions into exact, JSON-safe filters without floating-point arithmetic.",
   "type": "module",
   "license": "MIT",
@@ -13,8 +13,13 @@
     "url": "git+https://github.com/ervin-khamoido/money-query-parser.git"
   },
   "homepage": "https://ervin-khamoido.github.io/money-query-parser/",
-  "bugs": { "url": "https://github.com/ervin-khamoido/money-query-parser/issues" },
-  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "bugs": {
+    "url": "https://github.com/ervin-khamoido/money-query-parser/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -50,6 +55,7 @@
     "demo": "npm run build && node examples/demo.mjs",
     "check": "npm run typecheck && npm test",
     "check:package": "npm run build && node scripts/check-package.mjs",
+    "check:compatibility": "npm run build && node scripts/check-compatibility.mjs",
     "prepack": "npm run check"
   },
   "devDependencies": {
