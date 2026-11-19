@@ -353,7 +353,7 @@ For a short code review, start with [design decisions](docs/design.md), then [th
 
 ## Documentation, releases and contributing
 
-The [documentation website](https://ervin-khamoido.github.io/money-query-parser/) includes a live parser, format presets, shareable examples, API reference and release notes generated from `CHANGELOG.md`. It bundles the same version of the parser built from this repository, with no CDN or external API calls. Run `npm run preview:site` to work on it locally.
+The [documentation website](https://ervin-khamoido.github.io/money-query-parser/) includes a live parser, format presets, shareable examples, API reference and release notes generated from `CHANGELOG.md`. It bundles the same version of the parser built from this repository; all parsing and validation run locally. The canonical website uses [cookie-free Umami analytics](docs/analytics.md), excluding query contents and ASTs. The npm library contains no telemetry. Run `npm run preview:site` to work on it locally; local previews do not load analytics.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for grammar-change expectations and [the release guide](docs/releasing.md) for verification, npm trusted publishing and website deployment. Releases are available on [GitHub](https://github.com/ervin-khamoido/money-query-parser/releases), including an [Atom feed](https://github.com/ervin-khamoido/money-query-parser/releases.atom). Scope limitations are listed separately in [the changelog](CHANGELOG.md).
 

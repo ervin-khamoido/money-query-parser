@@ -47,7 +47,7 @@
     <section class="use-cases container" aria-label="Use cases"><p>Built for search where<br><strong>the amount matters.</strong></p><div><span>Transaction search</span><span>Invoice dashboards</span><span>Expense tools</span><span>Admin filters</span></div></section>
 
     <section class="playground-section" id="playground" aria-labelledby="playground-title"><div class="container">
-      <div class="section-heading"><div><p class="eyebrow">TRY IT LIVE</p><h2 id="playground-title">A string. A filter. No surprises.</h2></div><p>Runs in your browser using the same parser<br class="desktop-break"> shipped in v{{VERSION}}. Parsing happens locally. No API requests.</p></div>
+      <div class="section-heading"><div><p class="eyebrow">TRY IT LIVE</p><h2 id="playground-title">A string. A filter. No surprises.</h2></div><p>Runs in your browser using the same parser<br class="desktop-break"> shipped in v{{VERSION}}. Parsing happens locally. Your queries stay on this device.</p></div>
       <noscript><p class="notice">Enable JavaScript to use the playground. All documentation below remains available.</p></noscript>
       <div class="playground-grid">
         <div class="query-panel">
@@ -149,7 +149,8 @@ type ParseResult =
 
     <section class="author-section container" aria-labelledby="author-title"><div class="author-monogram" aria-hidden="true">EK</div><div><p class="eyebrow">BUILT &amp; MAINTAINED BY</p><h2 id="author-title">Ervin Khamoido</h2><p>An independent TypeScript library with synthetic examples and documented design decisions. Contributions and practical integration feedback are welcome.</p><div class="author-links"><a class="text-link" href="https://github.com/ervin-khamoido">GitHub profile </a><a class="text-link" href="https://github.com/ervin-khamoido/money-query-parser/blob/main/CONTRIBUTING.md">Contribute </a></div></div></section>
   </main>
-  <footer class="footer container"><a class="brand" href="#main"><img src="./favicon.svg" width="25" height="25" alt=""><span>money-query-parser</span></a><span>v{{VERSION}} · MIT · No analytics or tracking</span><div><a href="https://www.npmjs.com/package/money-query-parser">npm </a><a href="https://github.com/ervin-khamoido/money-query-parser/blob/main/LICENSE">License </a><a href="#main">Back to top </a></div></footer>
+  <details class="privacy-note container" id="privacy"><summary>Website analytics &amp; privacy</summary><p>On the canonical GitHub Pages site, Umami measures pageviews and named interactions without cookies. Search expressions, amounts, saved filters and URL query parameters are not sent. Referral sources are recorded without their page paths. There are no session recordings. The npm package contains no telemetry.</p><p>To browse without analytics, use <a href="?analytics=off">this analytics-free link</a>. Tracking also respects Do Not Track and Global Privacy Control. Interaction counts suggest engagement; they do not prove a visitor is human or that a package was installed. <a href="https://umami.is/privacy">Umami privacy policy</a>.</p></details>
+  <footer class="footer container"><a class="brand" href="#main"><img src="./favicon.svg" width="25" height="25" alt=""><span>money-query-parser</span></a><span>v{{VERSION}} · MIT · <a href="#privacy">Cookie-free website analytics</a></span><div><a href="https://www.npmjs.com/package/money-query-parser">npm </a><a href="https://github.com/ervin-khamoido/money-query-parser/blob/main/LICENSE">License </a><a href="#main">Back to top </a></div></footer>
   <div class="toast" id="toast" role="status" hidden></div>
   <script type="module" src="./app.mjs"></script>
 </body>

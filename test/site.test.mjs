@@ -10,6 +10,9 @@ test('documentation build uses the exact library and current changelog version',
   assert.ok(html.includes(`v${metadata.version}`));
   assert.ok(html.includes('The first public release'));
   assert.doesNotMatch(html, /\{\{[A-Z_]+\}\}/);
+  assert.ok(html.includes('Website analytics &amp; privacy'));
+  assert.ok(!html.includes('No analytics or tracking'));
+  assert.equal(readFileSync('site/dist/analytics.mjs', 'utf8'), readFileSync('site/analytics.mjs', 'utf8'));
   for (const file of readdirSync('dist').filter((name) => name.endsWith('.js'))) {
     assert.equal(readFileSync(`site/dist/library/${file}`, 'utf8'), readFileSync(`dist/${file}`, 'utf8'));
   }

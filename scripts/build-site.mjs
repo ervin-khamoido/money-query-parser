@@ -19,7 +19,7 @@ const notes = releases.map(([, version, date, body]) => {
 
 rmSync(destination, { recursive: true, force: true });
 mkdirSync(join(destination, 'library'), { recursive: true });
-for (const file of ['styles.css', 'app.mjs', 'favicon.svg']) cpSync(join(source, file), join(destination, file));
+for (const file of ['styles.css', 'app.mjs', 'analytics.mjs', 'favicon.svg']) cpSync(join(source, file), join(destination, file));
 for (const file of readdirSync(join(root, 'dist')).filter((name) => name.endsWith('.js'))) {
   cpSync(join(root, 'dist', file), join(destination, 'library', file));
 }

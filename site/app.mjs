@@ -1,5 +1,6 @@
 import { createMoneyQueryParser, formatMoneyQuery, validateMoneyQuery } from './library/index.js';
 import { toPostgresWhere } from './examples/transaction-search.mjs';
+import { startAnalytics } from './analytics.mjs';
 
 const query = document.querySelector('#query');
 const format = document.querySelector('#format');
@@ -158,3 +159,4 @@ document.querySelector('#share-example').addEventListener('click', () => {
 });
 render();
 renderValidation();
+startAnalytics();

@@ -65,7 +65,7 @@ Run `npm run check:github-package` locally to verify the preparation and install
 
 ## Documentation
 
-`site/` contains buildless HTML, CSS and browser JavaScript. `npm run build:site` builds the library and copies its exact JavaScript into `site/dist/library/`. It generates release notes from `CHANGELOG.md` and copies the PostgreSQL example with only its import path changed. There are no external scripts, analytics or CDN dependencies.
+`site/` contains buildless HTML, CSS and browser JavaScript. `npm run build:site` builds the library and copies its exact JavaScript into `site/dist/library/`. It generates release notes from `CHANGELOG.md` and copies the PostgreSQL example with only its import path changed. Parsing runs locally. The canonical website loads an optional Umami Cloud tracker; see [website analytics](analytics.md). The npm library never loads or sends analytics.
 
 Enable GitHub Pages with GitHub Actions as its source. The **Documentation** workflow runs after successful main-branch push CI and deploys `site/dist`. It can also be started manually. It checks out the tested commit rather than an unrelated latest branch state. A failed CI run does not publish a website.
 
